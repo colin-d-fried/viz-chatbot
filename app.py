@@ -9,8 +9,10 @@ from data_utils import get_schema_summary, load_dataset, prepare_data_as_json, p
 from devin_client import DevinAPIError, DevinClient
 from prompt_builder import (
     build_followup_message,
+    build_followup_message_devin,
     build_followup_message_react,
     build_initial_prompt,
+    build_initial_prompt_devin,
     build_initial_prompt_react,
 )
 
@@ -23,6 +25,7 @@ st.title("Visualization Chatbot")
 # Session state initialisation
 # ---------------------------------------------------------------------------
 VIZ_MODES = {
+    "Devin": "devin",
     "Plotly (Python)": None,
     "recharts": "recharts",
     "visx": "visx",
@@ -38,7 +41,7 @@ defaults = {
     "attachment_url": None,  # URL returned by Devin after upload
     "devin_session_id": None,
     "devin_session_url": None,
-    "viz_mode": "Plotly (Python)",
+    "viz_mode": "Devin",
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -122,7 +125,7 @@ with st.sidebar:
         "Library",
         list(VIZ_MODES.keys()),
         index=list(VIZ_MODES.keys()).index(st.session_state.viz_mode),
-        help="Plotly renders Python charts locally. Other modes generate self-contained HTML via CDN.",
+        help="Devin auto-selects the best library. Plotly (Python) renders charts locally with full data. Other modes generate self-contained HTML via CDN.",
     )
     if selected_mode != st.session_state.viz_mode:
         st.session_state.viz_mode = selected_mode
@@ -189,8 +192,10 @@ if user_input:
         st.stop()
 
     client = DevinClient(api_key, org_id)
-    react_mode = VIZ_MODES[st.session_state.viz_mode] is not None
-    library_hint = VIZ_MODES[st.session_state.viz_mode]
+    mode_value = VIZ_MODES[st.session_state.viz_mode]
+    devin_mode = mode_value == "devin"
+    react_mode = mode_value is not None and not devin_mode
+    library_hint = mode_value if react_mode else None
 
     # Show user message immediately.
     with st.chat_message("user"):
@@ -202,7 +207,24 @@ if user_input:
             with st.spinner("Working…"):
                 is_followup = st.session_state.devin_session_id is not None
 
-                if react_mode:
+                if devin_mode:
+                    # --- Devin auto-select path ---
+                    schema = get_schema_summary(st.session_state.df)
+                    data_json = prepare_data_as_json(st.session_state.df)
+
+                    if not is_followup:
+                        prompt = build_initial_prompt_devin(
+                            user_input, schema, data_json,
+                        )
+                        session_id, session_url = client.create_session(prompt)
+                        st.session_state.devin_session_id = session_id
+                        st.session_state.devin_session_url = session_url
+                    else:
+                        session_id = st.session_state.devin_session_id
+                        client.send_message(
+                            session_id, build_followup_message_devin(user_input),
+                        )
+                elif react_mode:
                     # --- React / HTML path ---
                     schema = get_schema_summary(st.session_state.df)
                     data_json = prepare_data_as_json(st.session_state.df)
@@ -252,7 +274,7 @@ if user_input:
             # Fetch messages via the dedicated v3 messages endpoint.
             messages = client.get_messages(session_id)
 
-            if react_mode:
+            if devin_mode or react_mode:
                 html_code = extract_html(messages)
                 if html_code:
                     components.html(html_code, height=600, scrolling=True)

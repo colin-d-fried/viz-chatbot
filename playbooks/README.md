@@ -7,7 +7,8 @@ generating visualizations.
 
 | File | Constant | Purpose |
 |---|---|---|
-| `react_component_builder.py` | `REACT_COMPONENT_BUILDER_PLAYBOOK` | Generates self-contained HTML files that render visualizations using React-based libraries (recharts, visx, react-leaflet) or vanilla JS libraries (vis.js) loaded via CDN. |
+| `devin_auto_builder.py` | `DEVIN_AUTO_BUILDER_PLAYBOOK` | **Recommended.** Devin analyses the data and request to automatically choose the best library (Plotly.js, recharts, visx, leaflet, or vis.js) and chart type. Outputs self-contained HTML. |
+| `react_component_builder.py` | `REACT_COMPONENT_BUILDER_PLAYBOOK` | Generates self-contained HTML using a specific React/JS library (recharts, visx, leaflet, vis.js). Used when a library is explicitly selected. |
 
 The original Plotly playbook (`VISUALIZATION_BUILDER_PLAYBOOK`) lives in
 `prompt_builder.py`.
@@ -19,9 +20,9 @@ messages), you can create one in the Devin dashboard:
 
 1. Open **Settings → Playbooks** in the Devin UI.
 2. Click **Create Playbook**.
-3. Set the title to `react-component-builder`.
-4. Paste the full text of `REACT_COMPONENT_BUILDER_PLAYBOOK` (from
-   `playbooks/react_component_builder.py`) into the body field.
+3. Set the title to `devin-auto-visualization` (or `react-component-builder`).
+4. Paste the full text of `DEVIN_AUTO_BUILDER_PLAYBOOK` (from
+   `playbooks/devin_auto_builder.py`) into the body field.
 5. Save the playbook and copy its `playbook_id`.
 6. Pass the `playbook_id` when calling `DevinClient.create_session()`:
 
