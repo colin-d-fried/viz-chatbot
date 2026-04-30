@@ -44,9 +44,11 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 ```
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
 <script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
+- The recharts@2 UMD requires `prop-types` as a peer dependency — it must be loaded before `Recharts.js`.
 - Use Babel standalone for JSX transpilation: `<script type="text/babel">`
 - Access components from the `Recharts` global: `Recharts.BarChart`, `Recharts.LineChart`, `Recharts.PieChart`, `Recharts.AreaChart`, `Recharts.RadarChart`, `Recharts.ScatterChart`, etc.
 - Use `Recharts.ResponsiveContainer` with `width="100%"` and a fixed `height`.
@@ -56,6 +58,7 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 ```
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
 <!-- Load visx sub-packages BEFORE Babel -->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
