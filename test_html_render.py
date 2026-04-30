@@ -12,7 +12,7 @@ sample_html = """<!DOCTYPE html>
 <style>body { margin: 0; } #root { width: 100%; height: 500px; }</style>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>

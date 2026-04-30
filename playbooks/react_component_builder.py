@@ -20,7 +20,7 @@ Use this decision framework:
 |---|---|
 | Standard charts (bar, line, pie, area) | recharts |
 | Custom/artistic SVG visualizations | visx |
-| Geographic / map data | react-leaflet |
+| Geographic / map data | leaflet |
 | Network graphs / relationships | vis.js (vis-network) |
 | Timelines / temporal event data | vis.js (vis-timeline) |
 
@@ -44,7 +44,7 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 ```
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
 - Use Babel standalone for JSX transpilation: `<script type="text/babel">`
@@ -68,20 +68,16 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 - Use Babel standalone for JSX: `<script type="text/babel">` — Babel MUST be the last script in `<head>`.
 - Render with `ReactDOM.createRoot(document.getElementById("root")).render(<App />)`.
 
-**react-leaflet** — for geographic/map visualizations, markers, tile layers, choropleth overlays:
+**leaflet** — for geographic/map visualizations, markers, tile layers, choropleth overlays (does NOT require React — use vanilla JS API, like vis.js):
 ```
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/react-leaflet/umd/react-leaflet.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
 - Must include the Leaflet CSS `<link>` tag.
 - Set an explicit height on the map container div (e.g. `style="height: 500px"`).
-- Access components from `ReactLeaflet` global: `ReactLeaflet.MapContainer`, `ReactLeaflet.TileLayer`, `ReactLeaflet.Marker`, `ReactLeaflet.Popup`, etc.
+- Use `L.map(container)`, `L.tileLayer(url).addTo(map)`, `L.marker([lat, lng]).addTo(map)`, `L.popup()`, etc.
 - Use OpenStreetMap tiles: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`
-- Render with `ReactDOM.createRoot(document.getElementById("root")).render(<App />)`.
+- Note: `react-leaflet` does NOT provide UMD builds and cannot be used via CDN `<script>` tags. Use the vanilla Leaflet API instead.
 
 **vis.js** — for network graphs, timelines, 3D visualizations (does NOT require React):
 ```

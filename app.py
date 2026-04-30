@@ -26,7 +26,7 @@ VIZ_MODES = {
     "Plotly (Python)": None,
     "recharts": "recharts",
     "visx": "visx",
-    "react-leaflet": "react-leaflet",
+    "leaflet": "leaflet",
     "vis.js": "vis.js",
 }
 

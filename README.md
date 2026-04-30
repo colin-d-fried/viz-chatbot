@@ -19,7 +19,7 @@ Datasets larger than 500 rows are truncated before being sent to Devin. In Plotl
 | **Plotly (Python)** | Plotly Express / Graph Objects | Standard data charts | *"show me sales by region as a bar chart"* |
 | **recharts** | Recharts (React) | Bar, line, pie, area charts | *"create a line chart of revenue over time"* |
 | **visx** | visx (React) | Custom/artistic SVG visualizations | *"make a radial chart of category scores"* |
-| **react-leaflet** | React-Leaflet | Maps and geographic data | *"show store locations on a map"* |
+| **leaflet** | Leaflet | Maps and geographic data | *"show store locations on a map"* |
 | **vis.js** | vis-network / vis-timeline | Network graphs, timelines | *"show a network graph of connections"* |
 
 Plotly is the default and most reliable for tabular data. The React-based modes generate self-contained HTML files that load libraries via CDN and render inside Streamlit using `st.components.v1.html()`.
