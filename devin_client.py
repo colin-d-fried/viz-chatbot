@@ -106,6 +106,8 @@ class DevinClient:
             if not body.get("has_next_page"):
                 break
             cursor = body.get("end_cursor")
+            if not cursor:
+                break
         return messages
 
     # ------------------------------------------------------------------
