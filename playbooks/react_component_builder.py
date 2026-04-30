@@ -36,14 +36,16 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 - The dataset is provided as a JSON array in a `<script>` tag as `const data = [...]`. Reference this `data` variable in the visualization code.
 - Do NOT call `document.write()` or use `alert()`.
 
+**CRITICAL**: Babel standalone (`@babel/standalone`) auto-transforms `<script type="text/babel">` tags the moment it loads. Therefore, **Babel must be the LAST `<script>` in the `<head>`**, after React, ReactDOM, and all library scripts. If Babel loads before a library, that library's global will be `undefined` when the JSX code runs.
+
 #### Library-Specific CDN URLs and Patterns
 
 **recharts** — for standard charts (bar, line, area, pie, radar, scatter):
 ```
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
 - Use Babel standalone for JSX transpilation: `<script type="text/babel">`
 - Access components from the `Recharts` global: `Recharts.BarChart`, `Recharts.LineChart`, `Recharts.PieChart`, `Recharts.AreaChart`, `Recharts.RadarChart`, `Recharts.ScatterChart`, etc.
@@ -54,15 +56,16 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 ```
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- Load visx sub-packages BEFORE Babel -->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
-- Load only the visx sub-packages needed via unpkg UMD builds, e.g.:
+- Load only the visx sub-packages needed via unpkg UMD builds **before** the Babel script, e.g.:
   `<script src="https://unpkg.com/@visx/shape/lib/index.js"></script>`
   `<script src="https://unpkg.com/@visx/scale/lib/index.js"></script>`
   `<script src="https://unpkg.com/@visx/axis/lib/index.js"></script>`
   `<script src="https://unpkg.com/@visx/group/lib/index.js"></script>`
 - visx has many sub-packages (@visx/shape, @visx/scale, @visx/axis, @visx/group, @visx/gradient, @visx/curve, etc.) — only load the ones needed.
-- Use Babel standalone for JSX: `<script type="text/babel">`
+- Use Babel standalone for JSX: `<script type="text/babel">` — Babel MUST be the last script in `<head>`.
 - Render with `ReactDOM.createRoot(document.getElementById("root")).render(<App />)`.
 
 **react-leaflet** — for geographic/map visualizations, markers, tile layers, choropleth overlays:
@@ -70,9 +73,9 @@ Output a **single fenced `html` code block** (not Python). The HTML must be a fu
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/react-leaflet/umd/react-leaflet.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 ```
 - Must include the Leaflet CSS `<link>` tag.
 - Set an explicit height on the map container div (e.g. `style="height: 500px"`).
