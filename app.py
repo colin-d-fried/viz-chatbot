@@ -102,12 +102,17 @@ with st.sidebar:
 
     st.divider()
 
-    st.header("Devin API Key")
+    st.header("Devin Credentials")
     api_key = st.text_input(
         "API Key",
         value=os.getenv("DEVIN_API_KEY", ""),
         type="password",
-        help="Create a Service User key (cog_…) in Devin Settings.",
+        help="Service User API key (cog_…) from Settings → Service Users.",
+    )
+    org_id = st.text_input(
+        "Organization ID",
+        value=os.getenv("DEVIN_ORG_ID", ""),
+        help="Organization ID (org-…) from Settings → Service Users.",
     )
 
     st.divider()
@@ -179,8 +184,11 @@ if user_input:
     if not api_key:
         st.warning("Please enter your Devin API key in the sidebar.")
         st.stop()
+    if not org_id:
+        st.warning("Please enter your Devin Organization ID in the sidebar.")
+        st.stop()
 
-    client = DevinClient(api_key)
+    client = DevinClient(api_key, org_id)
     react_mode = VIZ_MODES[st.session_state.viz_mode] is not None
     library_hint = VIZ_MODES[st.session_state.viz_mode]
 
@@ -237,8 +245,8 @@ if user_input:
                 # Block until Devin finishes.
                 session = client.poll_until_done(session_id)
 
-            # Extract and render the result.
-            messages = session.get("messages") or []
+            # Fetch messages via the dedicated v3 messages endpoint.
+            messages = client.get_messages(session_id)
 
             if react_mode:
                 html_code = extract_html(messages)
@@ -253,7 +261,7 @@ if user_input:
                         {"role": "assistant", "type": "html_component", "html": html_code}
                     )
                 else:
-                    devin_msgs = [m for m in messages if m.get("type") == "devin_message"]
+                    devin_msgs = [m for m in messages if m.get("source") == "devin"]
                     fallback = (
                         devin_msgs[-1]["message"]
                         if devin_msgs
@@ -293,7 +301,7 @@ if user_input:
                             {"role": "assistant", "type": "error", "content": error_text}
                         )
                 else:
-                    devin_msgs = [m for m in messages if m.get("type") == "devin_message"]
+                    devin_msgs = [m for m in messages if m.get("source") == "devin"]
                     fallback = (
                         devin_msgs[-1]["message"]
                         if devin_msgs

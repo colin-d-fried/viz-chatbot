@@ -27,7 +27,7 @@ Plotly is the default and most reliable for tabular data. The React-based modes 
 ## Prerequisites
 
 - Python 3.11+
-- A Devin API key — create a Service User key (`cog_…`) under **Settings → Service Users** in Devin
+- A Devin **Service User** API key (`cog_…`) and **Organization ID** (`org-…`) — both found under **Settings → Service Users** in Devin ([auth docs](https://docs.devin.ai/api-reference/authentication))
 
 ## Setup
 
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Copy `.env.example` to `.env` and add your key:
+Copy `.env.example` to `.env` and add your credentials:
 
 ```bash
 cp .env.example .env
@@ -54,9 +54,10 @@ cp .env.example .env
 
 ```
 DEVIN_API_KEY=cog_your_key_here
+DEVIN_ORG_ID=org-your_org_id_here
 ```
 
-Alternatively, leave `.env` empty and paste the key into the **Devin API Key** field in the sidebar at runtime.
+Alternatively, leave `.env` empty and enter both values in the **Devin Credentials** section of the sidebar at runtime.
 
 ## Running
 
@@ -71,7 +72,7 @@ The app opens at `http://localhost:8501` by default.
 ```
 viz-chatbot/
 ├── app.py                                # Streamlit UI — sidebar, chat loop, result rendering
-├── devin_client.py                       # Devin API wrapper (upload, create/poll/message session)
+├── devin_client.py                       # Devin v3 API wrapper (sessions, messages, polling)
 ├── prompt_builder.py                     # Playbook injection + prompt assembly (Plotly & React)
 ├── data_utils.py                         # Dataset loading, schema summary, upload/JSON truncation
 ├── code_extractor.py                     # Parses Python & HTML code blocks from Devin messages
