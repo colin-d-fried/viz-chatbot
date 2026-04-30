@@ -6,7 +6,8 @@ POLL_INTERVAL = 5
 DEFAULT_TIMEOUT = 600
 
 # v3 terminal conditions: status is "exit", "error", or "suspended".
-# When status is "running" with status_detail "finished", the task is also done.
+# When status is "running" with status_detail "finished" or "waiting_for_user",
+# the task is also done (Devin has produced output).
 _TERMINAL_STATUSES = {"exit", "error", "suspended"}
 
 
@@ -118,8 +119,10 @@ class DevinClient:
         status = session.get("status", "")
         if status in _TERMINAL_STATUSES:
             return True
-        # "running" + status_detail "finished" also means done.
-        if status == "running" and session.get("status_detail") == "finished":
+        if status == "running" and session.get("status_detail") in (
+            "finished",
+            "waiting_for_user",
+        ):
             return True
         return False
 
