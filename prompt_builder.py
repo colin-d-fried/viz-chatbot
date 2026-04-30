@@ -1,3 +1,5 @@
+from playbooks.react_component_builder import REACT_COMPONENT_BUILDER_PLAYBOOK
+
 # Inline representation of the "visualization-builder" playbook.
 # In production this would be fetched via GET /v1/playbooks and matched by title,
 # but since playbooks cannot be directly triggered via the Devin API they are
@@ -82,4 +84,44 @@ def build_followup_message(user_request: str) -> str:
 
 As before, return only a fenced Python code block that builds a Plotly figure assigned to `fig`.
 Assume `df` is the same DataFrame as in the original session context.
+"""
+
+
+def build_initial_prompt_react(
+    user_request: str,
+    schema_summary: str,
+    data_json: str,
+    library_hint: str | None = None,
+) -> str:
+    hint_line = ""
+    if library_hint:
+        hint_line = f"\n**Requested library:** {library_hint}\n"
+    return f"""{REACT_COMPONENT_BUILDER_PLAYBOOK}
+
+---
+
+## Data Context
+
+{schema_summary}
+{hint_line}
+The dataset is provided as a JSON array below. Embed it directly in the HTML
+inside a `<script>` tag as `const data = [...];`.
+
+```json
+{data_json}
+```
+
+---
+
+## User Request
+
+{user_request}
+"""
+
+
+def build_followup_message_react(user_request: str) -> str:
+    return f"""New visualization request: {user_request}
+
+As before, return only a fenced HTML code block containing a self-contained HTML file.
+Use the same `data` variable already defined in the page.
 """

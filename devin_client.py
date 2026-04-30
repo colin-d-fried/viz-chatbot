@@ -28,12 +28,15 @@ class DevinClient:
             raise DevinAPIError(f"Attachment upload failed ({resp.status_code}): {resp.text}")
         return resp.text.strip().strip('"')
 
-    def create_session(self, prompt: str) -> tuple[str, str]:
+    def create_session(self, prompt: str, playbook_id: str | None = None) -> tuple[str, str]:
         """Returns (session_id, session_url)."""
+        payload: dict = {"prompt": prompt}
+        if playbook_id:
+            payload["playbook_id"] = playbook_id
         resp = requests.post(
             f"{BASE_URL}/v1/sessions",
             headers=self._json_headers(),
-            json={"prompt": prompt},
+            json=payload,
         )
         if not resp.ok:
             raise DevinAPIError(f"Session creation failed ({resp.status_code}): {resp.text}")
