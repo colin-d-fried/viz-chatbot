@@ -8,7 +8,7 @@ import requests
 _CODE_BLOCK_RE = re.compile(r"```python\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
 _HTML_BLOCK_RE = re.compile(r"```html\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
 _ATTACHMENT_RE = re.compile(r'ATTACHMENT:\s*(\{[^}]+\})')
-_DEPLOYED_URL_RE = re.compile(r'https://[a-z0-9-]+\.devinapps\.com')
+_DEPLOYED_URL_RE = re.compile(r'https://[a-z0-9-]+\.devinapps\.com[^\s)"]*')
 
 
 def _devin_messages(messages: list[dict] | None) -> list[dict]:

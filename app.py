@@ -200,12 +200,14 @@ if user_input:
     with st.chat_message("assistant"):
         try:
             with st.spinner("Working…"):
+                is_followup = st.session_state.devin_session_id is not None
+
                 if react_mode:
                     # --- React / HTML path ---
                     schema = get_schema_summary(st.session_state.df)
                     data_json = prepare_data_as_json(st.session_state.df)
 
-                    if st.session_state.devin_session_id is None:
+                    if not is_followup:
                         prompt = build_initial_prompt_react(
                             user_input, schema, data_json, library_hint=library_hint,
                         )
@@ -228,7 +230,7 @@ if user_input:
                             data_bytes, filename,
                         )
 
-                    if st.session_state.devin_session_id is None:
+                    if not is_followup:
                         schema = get_schema_summary(st.session_state.df)
                         prompt = build_initial_prompt(
                             user_input, schema, st.session_state.attachment_url,
@@ -243,7 +245,9 @@ if user_input:
                         )
 
                 # Block until Devin finishes.
-                session = client.poll_until_done(session_id)
+                session = client.poll_until_done(
+                    session_id, is_followup=is_followup,
+                )
 
             # Fetch messages via the dedicated v3 messages endpoint.
             messages = client.get_messages(session_id)

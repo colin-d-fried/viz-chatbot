@@ -126,8 +126,26 @@ class DevinClient:
             return True
         return False
 
-    def poll_until_done(self, session_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    def poll_until_done(
+        self,
+        session_id: str,
+        timeout: int = DEFAULT_TIMEOUT,
+        *,
+        is_followup: bool = False,
+    ) -> dict:
         deadline = time.time() + timeout
+
+        # For follow-up messages the session may still be in its previous
+        # done state.  Wait for it to leave that state before polling for
+        # the new completion — otherwise _is_done returns True immediately
+        # and we retrieve stale messages.
+        if is_followup:
+            while time.time() < deadline:
+                session = self.get_session(session_id)
+                if not self._is_done(session):
+                    break
+                time.sleep(POLL_INTERVAL)
+
         while time.time() < deadline:
             session = self.get_session(session_id)
             if self._is_done(session):
