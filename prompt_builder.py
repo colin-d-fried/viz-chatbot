@@ -123,5 +123,5 @@ def build_followup_message_react(user_request: str) -> str:
     return f"""New visualization request: {user_request}
 
 As before, return only a fenced HTML code block containing a self-contained HTML file.
-Use the same `data` variable already defined in the page.
+Re-embed the dataset as `const data = [...]` in a `<script>` tag, using the same data from the original session context.
 """
