@@ -1,12 +1,18 @@
 import os
 
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
-from code_extractor import execute_chart_code, extract_code
-from data_utils import get_schema_summary, load_dataset, prepare_for_upload
+from code_extractor import execute_chart_code, extract_code, extract_html
+from data_utils import get_schema_summary, load_dataset, prepare_data_as_json, prepare_for_upload
 from devin_client import DevinAPIError, DevinClient
-from prompt_builder import build_followup_message, build_initial_prompt
+from prompt_builder import (
+    build_followup_message,
+    build_followup_message_react,
+    build_initial_prompt,
+    build_initial_prompt_react,
+)
 
 load_dotenv()
 
@@ -16,6 +22,14 @@ st.title("Visualization Chatbot")
 # ---------------------------------------------------------------------------
 # Session state initialisation
 # ---------------------------------------------------------------------------
+VIZ_MODES = {
+    "Plotly (Python)": None,
+    "recharts": "recharts",
+    "visx": "visx",
+    "leaflet": "leaflet",
+    "vis.js": "vis.js",
+}
+
 defaults = {
     "messages": [],          # list of chat message dicts
     "df": None,              # loaded DataFrame (full dataset)
@@ -24,6 +38,7 @@ defaults = {
     "attachment_url": None,  # URL returned by Devin after upload
     "devin_session_id": None,
     "devin_session_url": None,
+    "viz_mode": "Plotly (Python)",
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -87,13 +102,32 @@ with st.sidebar:
 
     st.divider()
 
-    st.header("Devin API Key")
+    st.header("Devin Credentials")
     api_key = st.text_input(
         "API Key",
         value=os.getenv("DEVIN_API_KEY", ""),
         type="password",
-        help="Create a Service User key (cog_…) in Devin Settings.",
+        help="Service User API key (cog_…) from Settings → Service Users.",
     )
+    org_id = st.text_input(
+        "Organization ID",
+        value=os.getenv("DEVIN_ORG_ID", ""),
+        help="Organization ID (org-…) from Settings → Service Users.",
+    )
+
+    st.divider()
+
+    st.header("Visualization Mode")
+    selected_mode = st.selectbox(
+        "Library",
+        list(VIZ_MODES.keys()),
+        index=list(VIZ_MODES.keys()).index(st.session_state.viz_mode),
+        help="Plotly renders Python charts locally. Other modes generate self-contained HTML via CDN.",
+    )
+    if selected_mode != st.session_state.viz_mode:
+        st.session_state.viz_mode = selected_mode
+        reset_conversation()
+        st.rerun()
 
     st.divider()
 
@@ -123,6 +157,10 @@ def render_message(msg: dict):
                 st.code(msg["code"], language="python")
         except Exception as exc:
             st.warning(f"Could not re-render chart: {exc}")
+    elif msg["type"] == "html_component":
+        components.html(msg["html"], height=600, scrolling=True)
+        with st.expander("Generated HTML"):
+            st.code(msg["html"], language="html")
     elif msg["type"] == "error":
         st.error(msg["content"])
 
@@ -146,8 +184,13 @@ if user_input:
     if not api_key:
         st.warning("Please enter your Devin API key in the sidebar.")
         st.stop()
+    if not org_id:
+        st.warning("Please enter your Devin Organization ID in the sidebar.")
+        st.stop()
 
-    client = DevinClient(api_key)
+    client = DevinClient(api_key, org_id)
+    react_mode = VIZ_MODES[st.session_state.viz_mode] is not None
+    library_hint = VIZ_MODES[st.session_state.viz_mode]
 
     # Show user message immediately.
     with st.chat_message("user"):
@@ -157,70 +200,124 @@ if user_input:
     with st.chat_message("assistant"):
         try:
             with st.spinner("Working…"):
-                # 1. Upload dataset once per session.
-                if st.session_state.attachment_url is None:
-                    data_bytes, filename = prepare_for_upload(
-                        st.session_state.df, st.session_state.source_name or "dataset.csv"
-                    )
-                    st.session_state.attachment_url = client.upload_attachment(data_bytes, filename)
+                is_followup = st.session_state.devin_session_id is not None
 
-                # 2. Create a new Devin session or reuse the active one.
-                if st.session_state.devin_session_id is None:
+                if react_mode:
+                    # --- React / HTML path ---
                     schema = get_schema_summary(st.session_state.df)
-                    prompt = build_initial_prompt(
-                        user_input, schema, st.session_state.attachment_url
-                    )
-                    session_id, session_url = client.create_session(prompt)
-                    st.session_state.devin_session_id = session_id
-                    st.session_state.devin_session_url = session_url
+                    data_json = prepare_data_as_json(st.session_state.df)
+
+                    if not is_followup:
+                        prompt = build_initial_prompt_react(
+                            user_input, schema, data_json, library_hint=library_hint,
+                        )
+                        session_id, session_url = client.create_session(prompt)
+                        st.session_state.devin_session_id = session_id
+                        st.session_state.devin_session_url = session_url
+                    else:
+                        session_id = st.session_state.devin_session_id
+                        client.send_message(
+                            session_id, build_followup_message_react(user_input),
+                        )
                 else:
-                    session_id = st.session_state.devin_session_id
-                    client.send_message(session_id, build_followup_message(user_input))
+                    # --- Plotly (Python) path ---
+                    if st.session_state.attachment_url is None:
+                        data_bytes, filename = prepare_for_upload(
+                            st.session_state.df,
+                            st.session_state.source_name or "dataset.csv",
+                        )
+                        st.session_state.attachment_url = client.upload_attachment(
+                            data_bytes, filename,
+                        )
 
-                # 3. Block until Devin finishes.
-                session = client.poll_until_done(session_id)
+                    if not is_followup:
+                        schema = get_schema_summary(st.session_state.df)
+                        prompt = build_initial_prompt(
+                            user_input, schema, st.session_state.attachment_url,
+                        )
+                        session_id, session_url = client.create_session(prompt)
+                        st.session_state.devin_session_id = session_id
+                        st.session_state.devin_session_url = session_url
+                    else:
+                        session_id = st.session_state.devin_session_id
+                        client.send_message(
+                            session_id, build_followup_message(user_input),
+                        )
 
-            # 4. Extract and execute the chart code.
-            messages = session.get("messages") or []
-            code = extract_code(messages)
+                # Block until Devin finishes.
+                session = client.poll_until_done(
+                    session_id, is_followup=is_followup,
+                )
 
-            if code:
-                fig, err = execute_chart_code(code, st.session_state.df)
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True)
-                    with st.expander("Generated code"):
-                        st.code(code, language="python")
-                    # Persist chart for re-render on future runs.
+            # Fetch messages via the dedicated v3 messages endpoint.
+            messages = client.get_messages(session_id)
+
+            if react_mode:
+                html_code = extract_html(messages)
+                if html_code:
+                    components.html(html_code, height=600, scrolling=True)
+                    with st.expander("Generated HTML"):
+                        st.code(html_code, language="html")
                     st.session_state.messages.append(
                         {"role": "user", "type": "text", "content": user_input}
                     )
                     st.session_state.messages.append(
-                        {"role": "assistant", "type": "chart", "code": code}
+                        {"role": "assistant", "type": "html_component", "html": html_code}
                     )
                 else:
-                    error_text = f"Devin returned code but it could not be executed:\n\n{err}\n\n```python\n{code}\n```"
-                    st.error(error_text)
+                    devin_msgs = [m for m in messages if m.get("source") == "devin"]
+                    fallback = (
+                        devin_msgs[-1]["message"]
+                        if devin_msgs
+                        else "Devin did not return an HTML visualization. Try rephrasing your request."
+                    )
+                    st.markdown(fallback)
                     st.session_state.messages.append(
                         {"role": "user", "type": "text", "content": user_input}
                     )
                     st.session_state.messages.append(
-                        {"role": "assistant", "type": "error", "content": error_text}
+                        {"role": "assistant", "type": "text", "content": fallback}
                     )
             else:
-                # No code block — show whatever Devin said as plain text.
-                devin_msgs = [m for m in messages if m.get("type") == "devin_message"]
-                fallback = (
-                    devin_msgs[-1]["message"]
-                    if devin_msgs
-                    else "Devin did not return a visualization. Try rephrasing your request."
-                )
-                st.markdown(fallback)
-                st.session_state.messages.append(
-                    {"role": "user", "type": "text", "content": user_input}
-                )
-                st.session_state.messages.append(
-                    {"role": "assistant", "type": "text", "content": fallback}
-                )
+                code = extract_code(messages)
+                if code:
+                    fig, err = execute_chart_code(code, st.session_state.df)
+                    if fig:
+                        st.plotly_chart(fig, use_container_width=True)
+                        with st.expander("Generated code"):
+                            st.code(code, language="python")
+                        st.session_state.messages.append(
+                            {"role": "user", "type": "text", "content": user_input}
+                        )
+                        st.session_state.messages.append(
+                            {"role": "assistant", "type": "chart", "code": code}
+                        )
+                    else:
+                        error_text = (
+                            f"Devin returned code but it could not be executed:\n\n"
+                            f"{err}\n\n```python\n{code}\n```"
+                        )
+                        st.error(error_text)
+                        st.session_state.messages.append(
+                            {"role": "user", "type": "text", "content": user_input}
+                        )
+                        st.session_state.messages.append(
+                            {"role": "assistant", "type": "error", "content": error_text}
+                        )
+                else:
+                    devin_msgs = [m for m in messages if m.get("source") == "devin"]
+                    fallback = (
+                        devin_msgs[-1]["message"]
+                        if devin_msgs
+                        else "Devin did not return a visualization. Try rephrasing your request."
+                    )
+                    st.markdown(fallback)
+                    st.session_state.messages.append(
+                        {"role": "user", "type": "text", "content": user_input}
+                    )
+                    st.session_state.messages.append(
+                        {"role": "assistant", "type": "text", "content": fallback}
+                    )
 
         except TimeoutError as exc:
             msg_text = str(exc)

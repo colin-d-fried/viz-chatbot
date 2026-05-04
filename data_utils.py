@@ -52,3 +52,8 @@ def prepare_for_upload(df: pd.DataFrame, original_name: str = "dataset.csv") -> 
     truncated.to_csv(buf, index=False)
     filename = original_name if original_name.lower().endswith(".csv") else "dataset.csv"
     return buf.getvalue().encode("utf-8"), filename
+
+
+def prepare_data_as_json(df: pd.DataFrame, max_rows: int = MAX_UPLOAD_ROWS) -> str:
+    """Truncate to *max_rows* and return a JSON-records string for embedding in HTML."""
+    return df.head(max_rows).to_json(orient="records")
