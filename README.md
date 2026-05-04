@@ -5,7 +5,7 @@ A Streamlit app that lets you upload a dataset and build visualizations through 
 ## How it works
 
 1. Upload a dataset (CSV, Excel, JSON, or Parquet) via the sidebar
-2. Choose a **Visualization Mode** — Plotly (default) or a React-based library
+2. Choose a **Visualization Mode** — Devin (default, auto-selects library), Plotly, or a specific React library
 3. Type a visualization request in the chat (e.g. *"show me sales by region as a bar chart"*)
 4. The app uploads your data to Devin, triggers a session using the appropriate playbook, and polls for the result
 5. The generated chart renders inline — follow-up requests reuse the same Devin session
@@ -16,13 +16,14 @@ Datasets larger than 500 rows are truncated before being sent to Devin. In Plotl
 
 | Mode | Library | Best for | Example request |
 |---|---|---|---|
-| **Plotly (Python)** | Plotly Express / Graph Objects | Standard data charts | *"show me sales by region as a bar chart"* |
+| **Devin** *(default)* | Auto-selected (Plotly.js, recharts, visx, leaflet, vis.js) | Any visualization — Devin picks the best library | *"visualize this data"* |
+| **Plotly (Python)** | Plotly Express / Graph Objects | Standard data charts (uses full dataset locally) | *"show me sales by region as a bar chart"* |
 | **recharts** | Recharts (React) | Bar, line, pie, area charts | *"create a line chart of revenue over time"* |
 | **visx** | visx (React) | Custom/artistic SVG visualizations | *"make a radial chart of category scores"* |
 | **leaflet** | Leaflet | Maps and geographic data | *"show store locations on a map"* |
 | **vis.js** | vis-network / vis-timeline | Network graphs, timelines | *"show a network graph of connections"* |
 
-Plotly is the default and most reliable for tabular data. The React-based modes generate self-contained HTML files that load libraries via CDN and render inside Streamlit using `st.components.v1.html()`.
+**Devin** mode is the default and recommended for most users — it analyses your data and request to choose the best library and chart type automatically. **Plotly (Python)** is the best choice when you need the full dataset (no 500-row truncation) rendered locally. The other modes let you force a specific React/JS library.
 
 ## Prerequisites
 
@@ -78,6 +79,7 @@ viz-chatbot/
 ├── code_extractor.py                     # Parses Python & HTML code blocks from Devin messages
 ├── playbooks/
 │   ├── __init__.py
+│   ├── devin_auto_builder.py             # Auto-select playbook — Devin picks the best library
 │   ├── react_component_builder.py        # React/HTML playbook for CDN-based visualizations
 │   └── README.md                         # Playbook registration & usage documentation
 ├── requirements.txt
@@ -86,12 +88,12 @@ viz-chatbot/
 
 ## Playbook Registration (Optional)
 
-The React playbook is embedded inline by default. For more token-efficient
-follow-up messages you can register it in Devin's UI:
+Playbooks are embedded inline by default. For more token-efficient follow-up
+messages you can register them in Devin's UI:
 
 1. Open **Settings → Playbooks** in the Devin dashboard
-2. Create a playbook titled `react-component-builder`
-3. Paste the playbook text from `playbooks/react_component_builder.py`
+2. Create a playbook titled `devin-auto-visualization` (or `react-component-builder` for the React-only playbook)
+3. Paste the playbook text from `playbooks/devin_auto_builder.py` (or `playbooks/react_component_builder.py`)
 4. Pass the resulting `playbook_id` when creating sessions
 
 See [`playbooks/README.md`](playbooks/README.md) for full details.

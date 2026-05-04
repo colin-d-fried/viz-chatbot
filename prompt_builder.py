@@ -1,3 +1,4 @@
+from playbooks.devin_auto_builder import DEVIN_AUTO_BUILDER_PLAYBOOK
 from playbooks.react_component_builder import REACT_COMPONENT_BUILDER_PLAYBOOK
 
 # Inline representation of the "visualization-builder" playbook.
@@ -122,6 +123,46 @@ inside a `<script>` tag as `const data = [...];`.
 def build_followup_message_react(user_request: str) -> str:
     return f"""New visualization request: {user_request}
 
+As before, return only a fenced HTML code block containing a self-contained HTML file.
+Re-embed the dataset as `const data = [...]` in a `<script>` tag, using the same data from the original session context.
+"""
+
+
+# ---------------------------------------------------------------------------
+# Devin auto-select mode (Devin chooses the best library)
+# ---------------------------------------------------------------------------
+def build_initial_prompt_devin(
+    user_request: str,
+    schema_summary: str,
+    data_json: str,
+) -> str:
+    return f"""{DEVIN_AUTO_BUILDER_PLAYBOOK}
+
+---
+
+## Data Context
+
+{schema_summary}
+
+The dataset is provided as a JSON array below. Embed it directly in the HTML
+inside a `<script>` tag as `const data = [...];`.
+
+```json
+{data_json}
+```
+
+---
+
+## User Request
+
+{user_request}
+"""
+
+
+def build_followup_message_devin(user_request: str) -> str:
+    return f"""New visualization request: {user_request}
+
+You may choose a different library and chart type if it better fits this new request.
 As before, return only a fenced HTML code block containing a self-contained HTML file.
 Re-embed the dataset as `const data = [...]` in a `<script>` tag, using the same data from the original session context.
 """
